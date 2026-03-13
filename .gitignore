@@ -12,5 +12,11 @@ wheels/
 # macOS
 .DS_Store
 
+# Generated cache
+src/data/resorts_cache.json
+
 # Plan
 PLAN.md
+
+# Random
+ignore/
