@@ -22,14 +22,12 @@ CACHE_MAX_AGE_SECONDS = 7 * 24 * 3600  # refresh weekly
 OVERPASS_URL = "https://overpass-api.de/api/interpreter"
 
 # Query OSM for named ski resort areas, return center points
-OVERPASS_QUERY = """
-[out:json][timeout:30];
-(
-  way["landuse"="winter_sports"]["name"];
-  relation["landuse"="winter_sports"]["name"];
-);
-out center;
-"""
+OVERPASS_QUERY = (
+    "[out:json][timeout:30];"
+    '( way["landuse"="winter_sports"]["name"];'
+    '  relation["landuse"="winter_sports"]["name"]; );'
+    "out center;"
+)
 
 
 def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
