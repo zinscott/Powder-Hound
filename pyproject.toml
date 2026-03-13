@@ -1,7 +1,12 @@
 [project]
 name = "powder-hound"
 version = "0.1.0"
-description = "Add your description here"
+description = "MCP server for finding ski resorts with the best snow conditions and cheap flights"
 readme = "README.md"
 requires-python = ">=3.14"
-dependencies = []
+dependencies = [
+    "mcp[cli]>=1.26",
+    "httpx>=0.28",
+    "pydantic>=2.0",
+    "python-dotenv>=1.0",
+]
