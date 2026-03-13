@@ -9,15 +9,15 @@ Ask natural language questions like **"Where is the best snow right now?"** and 
 - Ski resorts ranked by recent snowfall
 - Current snow depth and weather conditions
 - 7-day snow forecasts
-- Cheapest flights from your departure city
+- Upcoming flights from your departure city
 
 ## MCP Tools
 
 | Tool | Description |
 |------|-------------|
-| `find_best_snow` | Ranks ~35 resorts worldwide by recent snowfall. Optionally finds cheap flights from your airport. |
+| `find_best_snow` | Ranks ~35 resorts worldwide by recent snowfall. Optionally finds upcoming flights from your airport. |
 | `get_resort_conditions` | Detailed day-by-day snow and weather forecast for a specific resort. |
-| `search_flights` | Search for cheap flights between any two airports. |
+| `search_flights` | Search for upcoming flights between any two airports. |
 
 ## Resort Coverage
 
@@ -33,7 +33,7 @@ Ask natural language questions like **"Where is the best snow right now?"** and 
 | API | Purpose | API Key Required? |
 |-----|---------|-------------------|
 | [Open-Meteo](https://open-meteo.com/) | Snow and weather data | No |
-| [Kiwi/Tequila](https://tequila.kiwi.com/) | Flight search | Yes (free tier) |
+| [Aviation Stack](https://aviationstack.com/) | Flight schedules and routes | Yes (free tier, 100 req/month) |
 
 ## Setup
 
@@ -52,15 +52,15 @@ uv sync
 
 ### Configure API Keys
 
-Copy the example env file and add your Kiwi API key:
+Set your Aviation Stack API key as an environment variable or in a `.env` file:
 
-```bash
-cp .env.example .env
+```
+AVIATION_STACK_API_KEY=your_api_key_here
 ```
 
-Edit `.env` and set your `KIWI_API_KEY`. You can get a free key at [tequila.kiwi.com](https://tequila.kiwi.com/).
+Get a free key at [aviationstack.com](https://aviationstack.com/).
 
-> Snow conditions work without any API key. The flight search requires a Kiwi key.
+> Snow conditions work without any API key. The flight search requires an Aviation Stack key.
 
 ### Run
 
@@ -85,7 +85,7 @@ Or manually add to your Claude Desktop config (`~/Library/Application Support/Cl
       "command": "uv",
       "args": ["run", "--directory", "/path/to/Powder-Hound", "main.py"],
       "env": {
-        "KIWI_API_KEY": "your_key_here"
+        "AVIATION_STACK_API_KEY": "your_key_here"
       }
     }
   }
@@ -97,4 +97,4 @@ Or manually add to your Claude Desktop config (`~/Library/Application Support/Cl
 - "Where is the best snow right now?"
 - "Which resorts in Colorado got the most snow this week?"
 - "What are conditions like at Whistler?"
-- "Find me cheap flights from SFO to ski resorts with fresh snow"
+- "Find me flights from SFO to ski resorts with fresh snow"
