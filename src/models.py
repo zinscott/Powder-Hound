@@ -26,6 +26,7 @@ class DayForecast(BaseModel):
     snow_depth_m: float | None
     temp_high_c: float
     temp_low_c: float
+    wind_speed_max_kmh: float
 
 
 # Aggregated snow/weather conditions for a resort over a time range
