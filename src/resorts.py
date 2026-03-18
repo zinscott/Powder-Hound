@@ -31,7 +31,7 @@ OVERPASS_QUERY = (
 
 
 def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
-    """Great-circle distance between two GPS points in kilometers."""
+    # Great-circle distance between two GPS points in kilometers
     r = 6371
     dlat = math.radians(lat2 - lat1)
     dlon = math.radians(lon2 - lon1)
@@ -43,7 +43,7 @@ def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
 
 
 def load_airports(csv_path: str | None = None) -> list[dict]:
-    """Load major airports from bundled OurAirports CSV (pre-filtered to large only)."""
+    # Load major airports from bundled OurAirports CSV (pre-filtered to large only)
     if csv_path is None:
         csv_path = os.path.join(os.path.dirname(__file__), "data", "airports.csv")
 
@@ -66,7 +66,7 @@ def load_airports(csv_path: str | None = None) -> list[dict]:
 
 
 def find_nearest_airport(lat: float, lon: float, airports: list[dict]) -> dict | None:
-    """Find the closest airport to a given point using haversine distance."""
+    # Find the closest airport to a given point using haversine distance
     best = None
     best_dist = float("inf")
     for airport in airports:
@@ -78,7 +78,7 @@ def find_nearest_airport(lat: float, lon: float, airports: list[dict]) -> dict |
 
 
 def fetch_resorts_from_overpass() -> list[dict]:
-    """Query OpenStreetMap for ski resorts via the Overpass API."""
+    # Query OpenStreetMap for ski resorts via the Overpass API
     resp = httpx.post(OVERPASS_URL, data={"data": OVERPASS_QUERY}, timeout=60.0)
     resp.raise_for_status()
     data = resp.json()
@@ -102,30 +102,30 @@ def fetch_resorts_from_overpass() -> list[dict]:
     return resorts
 
 
-def _cache_is_valid() -> bool:
-    """Check if the local cache file exists and is fresh enough."""
+def cache_is_valid() -> bool:
+    # Check if the local cache file exists and is fresh enough
     if not os.path.exists(CACHE_FILE):
         return False
     age = time.time() - os.path.getmtime(CACHE_FILE)
     return age < CACHE_MAX_AGE_SECONDS
 
 
-def _save_cache(resorts: list[Resort]) -> None:
-    """Write resort list to local JSON cache."""
+def save_cache(resorts: list[Resort]) -> None:
+    # Write resort list to local JSON cache
     data = [r.model_dump() for r in resorts]
     with open(CACHE_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f)
 
 
-def _load_cache() -> list[Resort]:
-    """Read resort list from local JSON cache."""
+def load_cache() -> list[Resort]:
+    # Read resort list from local JSON cache
     with open(CACHE_FILE, encoding="utf-8") as f:
         data = json.load(f)
     return [Resort(**entry) for entry in data]
 
 
 def build_resort_database() -> list[Resort]:
-    """Fetch resorts from Overpass, match each to its nearest airport."""
+    # Fetch resorts from Overpass, match each to its nearest airport
     raw_resorts = fetch_resorts_from_overpass()
     airports = load_airports()
 
@@ -153,20 +153,20 @@ RESORTS: list[Resort] = []
 
 
 def load_resorts(force_refresh: bool = False) -> list[Resort]:
-    """Load resort database from cache, or fetch from Overpass if stale/missing."""
+    # Load resort database from cache, or fetch from Overpass if stale/missing
     global RESORTS
 
-    if not force_refresh and _cache_is_valid():
-        RESORTS = _load_cache()
+    if not force_refresh and cache_is_valid():
+        RESORTS = load_cache()
     else:
         RESORTS = build_resort_database()
-        _save_cache(RESORTS)
+        save_cache(RESORTS)
 
     return RESORTS
 
 
 def get_resort(name: str) -> Resort | None:
-    """Case-insensitive lookup — matches if query is contained in the resort name."""
+    # Case-insensitive lookup — matches if query is contained in the resort name
     name_lower = name.lower()
     for resort in RESORTS:
         if name_lower in resort.name.lower():
@@ -175,6 +175,6 @@ def get_resort(name: str) -> Resort | None:
 
 
 def get_resorts_by_region(region: str) -> list[Resort]:
-    """Filter resorts by region (case-insensitive partial match)."""
+    # Filter resorts by region (case-insensitive partial match)
     region_lower = region.lower()
     return [r for r in RESORTS if region_lower in r.region.lower()]

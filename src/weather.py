@@ -18,8 +18,8 @@ OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast"
 MAX_CONCURRENT = 10
 
 
-def _build_params(resort: Resort, days_back: int, forecast_days: int) -> list[tuple]:
-    """Build the Open-Meteo query parameters for a resort."""
+def build_params(resort: Resort, days_back: int, forecast_days: int) -> list[tuple]:
+    # Build the Open-Meteo query parameters for a resort
     return [
         ("latitude", resort.latitude),
         ("longitude", resort.longitude),
@@ -34,8 +34,8 @@ def _build_params(resort: Resort, days_back: int, forecast_days: int) -> list[tu
     ]
 
 
-def _parse_conditions(resort: Resort, data: dict, days_back: int) -> SnowConditions:
-    """Parse an Open-Meteo response into a SnowConditions object."""
+def parse_conditions(resort: Resort, data: dict, days_back: int) -> SnowConditions:
+    # Parse an Open-Meteo response into a SnowConditions object
     daily = data["daily"]
     dates = daily["time"]
     snowfall = daily["snowfall_sum"]
@@ -104,18 +104,18 @@ def _parse_conditions(resort: Resort, data: dict, days_back: int) -> SnowConditi
 
 
 def fetch_resort_conditions(resort: Resort, days_back: int = 3, forecast_days: int = 7) -> SnowConditions:
-    """Fetch snow and weather conditions for a single resort (sync)."""
-    params = _build_params(resort, days_back, forecast_days)
+    # Fetch snow and weather conditions for a single resort (sync)
+    params = build_params(resort, days_back, forecast_days)
     resp = httpx.get(OPEN_METEO_URL, params=params, timeout=30.0)
     resp.raise_for_status()
-    return _parse_conditions(resort, resp.json(), days_back)
+    return parse_conditions(resort, resp.json(), days_back)
 
 
 async def fetch_all_conditions(resorts: list[Resort], days_back: int = 3, forecast_days: int = 7) -> list[SnowConditions]:
-    """Fetch conditions for multiple resorts concurrently."""
+    # Fetch conditions for multiple resorts concurrently
     semaphore = asyncio.Semaphore(MAX_CONCURRENT)
 
-    async def _fetch_one(resort: Resort, client: httpx.AsyncClient) -> SnowConditions | None:
+    async def fetch_one(resort: Resort, client: httpx.AsyncClient) -> SnowConditions | None:
         async with semaphore:
             # Retry up to 3 times on rate limit (429) with increasing backoff
             for attempt in range(3):
@@ -123,7 +123,7 @@ async def fetch_all_conditions(resorts: list[Resort], days_back: int = 3, foreca
                     params = _build_params(resort, days_back, forecast_days)
                     resp = await client.get(OPEN_METEO_URL, params=params, timeout=30.0)
                     resp.raise_for_status()
-                    return _parse_conditions(resort, resp.json(), days_back)
+                    return parse_conditions(resort, resp.json(), days_back)
                 except httpx.HTTPStatusError as e:
                     if e.response.status_code == 429 and attempt < 2:
                         await asyncio.sleep(1 * (attempt + 1))
@@ -135,7 +135,7 @@ async def fetch_all_conditions(resorts: list[Resort], days_back: int = 3, foreca
                     return None
 
     async with httpx.AsyncClient() as client:
-        tasks = [_fetch_one(r, client) for r in resorts]
+        tasks = [fetch_one(r, client) for r in resorts]
         results = await asyncio.gather(*tasks)
 
     return [r for r in results if r is not None]
