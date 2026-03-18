@@ -1,6 +1,6 @@
 # Powder Hound
 
-An MCP (Model Context Protocol) server that finds the best ski resort snow conditions worldwide and searches for cheap flights to get there.
+An MCP (Model Context Protocol) server that finds the best ski resort snow conditions worldwide and searches for upcoming flights to get there.
 
 ## What It Does
 

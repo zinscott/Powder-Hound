@@ -1,7 +1,7 @@
 [project]
 name = "powder-hound"
 version = "0.1.0"
-description = "MCP server for finding ski resorts with the best snow conditions and cheap flights"
+description = "MCP server for finding ski resorts with the best snow conditions and upcoming flights"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
