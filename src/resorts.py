@@ -12,11 +12,12 @@ import math
 import os
 import time
 import httpx
+import reverse_geocoder as rg
 from models import Resort
 
 # Cache the built resort database to avoid hitting Overpass on every startup
 CACHE_FILE = os.path.join(os.path.dirname(__file__), "data", "resorts_cache.json")
-CACHE_MAX_AGE_SECONDS = 7 * 24 * 3600  # refresh weekly
+CACHE_MAX_AGE_SECONDS = 604800  # refresh weekly
 
 
 OVERPASS_URL = "https://overpass-api.de/api/interpreter"
@@ -28,6 +29,36 @@ OVERPASS_QUERY = (
     '  relation["landuse"="winter_sports"]["name"]; );'
     "out center;"
 )
+
+RESORTS: list[Resort] = []
+
+
+def load_resorts(force_refresh: bool = False) -> list[Resort]:
+    # Load resort database from cache, or fetch from Overpass if stale/missing
+    global RESORTS
+
+    if not force_refresh and cache_is_valid():
+        RESORTS = load_cache()
+    else:
+        RESORTS = build_resort_database()
+        save_cache(RESORTS)
+
+    return RESORTS
+
+
+def get_resort(name: str) -> Resort | None:
+    # Case-insensitive lookup — matches if query is contained in the resort name
+    name_lower = name.lower()
+    for resort in RESORTS:
+        if name_lower in resort.name.lower():
+            return resort
+    return None
+
+
+def get_resorts_by_region(region: str) -> list[Resort]:
+    # Filter resorts by region (case-insensitive partial match)
+    region_lower = region.lower()
+    return [r for r in RESORTS if region_lower in r.region.lower()]
 
 
 def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
@@ -46,19 +77,16 @@ def load_airports(csv_path: str | None = None) -> list[dict]:
     # Load major airports from bundled OurAirports CSV (pre-filtered to large only)
     if csv_path is None:
         csv_path = os.path.join(os.path.dirname(__file__), "data", "airports.csv")
-
+        
     airports = []
     with open(csv_path, encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for row in reader:
-            iata = row["iata_code"]
-            if not iata or len(iata) != 3:
-                continue
             airports.append({
                 "name": row["name"],
                 "city": row["municipality"] or "",
                 "country": row["iso_country"],
-                "iata": iata,
+                "iata": row["iata_code"],
                 "latitude": float(row["latitude_deg"]),
                 "longitude": float(row["longitude_deg"]),
             })
@@ -129,15 +157,19 @@ def build_resort_database() -> list[Resort]:
     raw_resorts = fetch_resorts_from_overpass()
     airports = load_airports()
 
+    # Batch reverse geocode all resort coordinates to get country codes
+    coords = [(raw["latitude"], raw["longitude"]) for raw in raw_resorts]
+    geo_results = rg.search(coords)
+
     resorts = []
-    for raw in raw_resorts:
+    for raw, geo in zip(raw_resorts, geo_results):
         nearest = find_nearest_airport(raw["latitude"], raw["longitude"], airports)
         if nearest is None:
             continue
 
         resorts.append(Resort(
             name=raw["name"],
-            region=nearest["country"],
+            region=geo["cc"],
             latitude=raw["latitude"],
             longitude=raw["longitude"],
             elevation_m=0,
@@ -145,36 +177,3 @@ def build_resort_database() -> list[Resort]:
             airport_name=nearest["name"],
         ))
     return resorts
-
-
-# --- Module-level state and lookup helpers ---
-
-RESORTS: list[Resort] = []
-
-
-def load_resorts(force_refresh: bool = False) -> list[Resort]:
-    # Load resort database from cache, or fetch from Overpass if stale/missing
-    global RESORTS
-
-    if not force_refresh and cache_is_valid():
-        RESORTS = load_cache()
-    else:
-        RESORTS = build_resort_database()
-        save_cache(RESORTS)
-
-    return RESORTS
-
-
-def get_resort(name: str) -> Resort | None:
-    # Case-insensitive lookup — matches if query is contained in the resort name
-    name_lower = name.lower()
-    for resort in RESORTS:
-        if name_lower in resort.name.lower():
-            return resort
-    return None
-
-
-def get_resorts_by_region(region: str) -> list[Resort]:
-    # Filter resorts by region (case-insensitive partial match)
-    region_lower = region.lower()
-    return [r for r in RESORTS if region_lower in r.region.lower()]
