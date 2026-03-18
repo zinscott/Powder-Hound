@@ -29,8 +29,8 @@ Resort data is fetched dynamically from OpenStreetMap, covering 3,500+ ski areas
 - **Switzerland** (~276 resorts) — Saas Fee, Zermatt, and more
 - **Austria** (~260 resorts) — St. Anton, Kitzbühel, and more
 - **France** (~234 resorts) — Chamonix, Val d'Isère, and more
-- **Norway** (~204 resorts)
-- **Italy** (~199 resorts)
+- **Norway** (~204 resorts) — Trysil, Hemsedal, Kvitfjell, and more
+- **Italy** (~199 resorts) — Cortina d'Ampezzo, Courmayeur, Livigno, and more
 - **Canada** (~190 resorts) — Whistler, Revelstoke, and more
 
 Plus resorts in Germany, Sweden, Spain, New Zealand, Argentina, and many more countries.
