@@ -13,16 +13,23 @@ import httpx
 from dotenv import load_dotenv
 from models import FlightResult
 
-load_dotenv()
+load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
 
-API_KEY = os.environ.get("AERODATABOX_API_KEY")
 AERODATABOX_URL = "https://aerodatabox.p.rapidapi.com"
+
+
+def get_api_key() -> str:
+    # Read API key at call time so env vars set after import are picked up
+    key = os.environ.get("AERODATABOX_API_KEY")
+    if not key:
+        raise ValueError("AERODATABOX_API_KEY not set in environment")
+    return key
 
 
 def get_headers() -> dict:
     # Build the RapidAPI auth headers
     return {
-        "X-RapidAPI-Key": API_KEY,
+        "X-RapidAPI-Key": get_api_key(),
         "X-RapidAPI-Host": "aerodatabox.p.rapidapi.com",
     }
 
@@ -47,9 +54,8 @@ def parse_flight(flight: dict, dep_iata: str) -> FlightResult:
 
 def search_flights(dep_iata: str, arr_iata: str, flight_date: str | None = None) -> list[FlightResult]:
     # Get departures from dep_iata, filtered to arr_iata, codeshares removed
-    if not API_KEY:
-        raise ValueError("AERODATABOX_API_KEY not set in environment")
-
+    dep_iata = dep_iata.upper()
+    arr_iata = arr_iata.upper()
     # Default to tomorrow if no date provided
     if flight_date:
         day = datetime.strptime(flight_date, "%Y-%m-%d")
@@ -87,9 +93,6 @@ def search_flights(dep_iata: str, arr_iata: str, flight_date: str | None = None)
 
 def get_flight_details(flight_number: str, flight_date: str | None = None) -> FlightResult | None:
     # Get full details for a specific flight including arrival time
-    if not API_KEY:
-        raise ValueError("AERODATABOX_API_KEY not set in environment")
-
     if not flight_date:
         flight_date = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
 
