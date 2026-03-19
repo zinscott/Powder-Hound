@@ -16,23 +16,23 @@ Ask natural language questions like **"Where is the best snow right now?"** and 
 
 | Tool | Description |
 |------|-------------|
-| `find_best_snow` | Ranks 3,500+ resorts worldwide by recent snowfall. Filter by region and optionally find upcoming flights. |
+| `find_best_snow` | Ranks 2,200+ resorts worldwide by recent snowfall. Filter by region and resort size. |
 | `get_resort_conditions` | Detailed day-by-day snow, wind, and weather forecast for a specific resort. |
 | `search_flights` | Search for upcoming flights from your airport to a resort's nearest airport. |
-| `get_flight_details` | Get full details (arrival time, gate, terminal) for a specific flight. |
+| `flight_info` | Get full details (arrival time, departure time, status) for a specific flight. |
 
 ## Resort Coverage
 
-Resort data is fetched dynamically from OpenStreetMap, covering 3,500+ ski areas worldwide. Each resort is automatically matched to its nearest major airport. Examples by region:
+Resort data is fetched dynamically from OpenStreetMap, covering 2,200+ ski resorts worldwide. Small non-resort areas (tubing hills, sledding parks) and abandoned sites are filtered out. Each resort is automatically matched to its nearest major airport. Examples by region:
 
-- **US** (~588 resorts) — Vail, Mammoth, Killington, and more
-- **Japan** (~423 resorts) — Niseko, Hakuba, and more
-- **Switzerland** (~276 resorts) — Saas Fee, Zermatt, and more
-- **Austria** (~260 resorts) — St. Anton, Kitzbühel, and more
-- **France** (~234 resorts) — Chamonix, Val d'Isère, and more
-- **Norway** (~204 resorts) — Trysil, Hemsedal, Kvitfjell, and more
-- **Italy** (~199 resorts) — Cortina d'Ampezzo, Courmayeur, Livigno, and more
-- **Canada** (~190 resorts) — Whistler, Revelstoke, and more
+- **US** (~422 resorts) — Vail, Mammoth, Killington, and more
+- **Japan** (~276 resorts) — Niseko, Hakuba, and more
+- **France** (~217 resorts) — Chamonix, Val d'Isère, and more
+- **Switzerland** (~201 resorts) — Saas Fee, Zermatt, and more
+- **Austria** (~195 resorts) — St. Anton, Kitzbühel, and more
+- **Italy** (~156 resorts) — Cortina d'Ampezzo, Courmayeur, Livigno, and more
+- **Canada** (~142 resorts) — Whistler, Revelstoke, and more
+- **Norway** (~77 resorts) — Trysil, Hemsedal, Kvitfjell, and more
 
 Plus resorts in Germany, Sweden, Spain, New Zealand, Argentina, and many more countries.
 
@@ -70,6 +70,8 @@ AERODATABOX_API_KEY=your_rapidapi_key_here
 Get a free key by subscribing to [AeroDataBox on RapidAPI](https://rapidapi.com/aedbx-aedbx/api/aerodatabox).
 
 > Snow conditions work without any API key. The flight search requires an AeroDataBox key.
+
+> **Free tier limitations:** 600 API units/month (not requests — endpoints cost 1-60 units each). Rate limited to 1 request/second. Future flight schedules available up to 365 days out but may show fewer results than day-of. Each flight search uses 2 calls (two 12-hour windows). No overages — once your monthly units are used, requests will fail until the next billing cycle.
 
 ### Run
 
