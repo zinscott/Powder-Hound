@@ -3,7 +3,7 @@ AeroDataBox flight schedule client.
 
 Fetches airport departures via AeroDataBox (RapidAPI) and filters
 to flights heading to a specific destination airport.
-Free tier: 150 requests/month, supports future dates.
+Free tier: 600 API units/month, supports future dates.
 """
 
 import os
@@ -36,7 +36,6 @@ def get_headers() -> dict:
 
 def parse_flight(flight: dict, dep_iata: str) -> FlightResult:
     # Map an AeroDataBox FIDS departure to our FlightResult model
-    # Arrival time is not provided by the FIDS endpoint
     movement = flight.get("movement", {})
     arr_airport = movement.get("airport", {})
     scheduled = movement.get("scheduledTime", {})
