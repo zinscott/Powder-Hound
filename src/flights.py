@@ -70,9 +70,13 @@ def search_flights(dep_iata: str, arr_iata: str, flight_date: str | None = None)
     all_departures = []
     for i, (from_local, to_local) in enumerate(ranges):
         if i > 0:
-            time.sleep(1)  # Rate limit: pause between consecutive requests
+            time.sleep(2)  # Rate limit: pause between consecutive requests
         url = f"{AERODATABOX_URL}/flights/airports/iata/{dep_iata}/{from_local}/{to_local}"
+        # Retry once on 429
         resp = httpx.get(url, headers=get_headers(), timeout=30.0)
+        if resp.status_code == 429:
+            time.sleep(3)
+            resp = httpx.get(url, headers=get_headers(), timeout=30.0)
         resp.raise_for_status()
         all_departures.extend(resp.json().get("departures", []))
 
