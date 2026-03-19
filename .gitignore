@@ -18,5 +18,8 @@ src/data/resorts_cache.json
 # Plan
 PLAN.md
 
+# Environment variables
+.env
+
 # Random
 ignore/

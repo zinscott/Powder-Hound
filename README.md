@@ -18,7 +18,8 @@ Ask natural language questions like **"Where is the best snow right now?"** and 
 |------|-------------|
 | `find_best_snow` | Ranks 3,500+ resorts worldwide by recent snowfall. Filter by region and optionally find upcoming flights. |
 | `get_resort_conditions` | Detailed day-by-day snow, wind, and weather forecast for a specific resort. |
-| `search_flights` | Search for upcoming flights between any two airports. |
+| `search_flights` | Search for upcoming flights from your airport to a resort's nearest airport. |
+| `get_flight_details` | Get full details (arrival time, gate, terminal) for a specific flight. |
 
 ## Resort Coverage
 
@@ -41,7 +42,7 @@ Plus resorts in Germany, Sweden, Spain, New Zealand, Argentina, and many more co
 |-----|---------|-------------------|
 | [Open-Meteo](https://open-meteo.com/) | Snow and weather data | No |
 | [OpenStreetMap Overpass](https://overpass-api.de/) | Ski resort database | No |
-| [Aviation Stack](https://aviationstack.com/) | Flight schedules and routes | Yes (free tier, 100 req/month) |
+| [AeroDataBox](https://aerodatabox.com/) (via RapidAPI) | Flight schedules and routes | Yes (free tier, 150 req/month) |
 
 ## Setup
 
@@ -60,15 +61,15 @@ uv sync
 
 ### Configure API Keys
 
-Set your Aviation Stack API key as an environment variable or in a `.env` file:
+Set your AeroDataBox API key as an environment variable or in a `.env` file:
 
 ```
-AVIATIONSTACK_API_KEY=your_api_key_here
+AERODATABOX_API_KEY=your_rapidapi_key_here
 ```
 
-Get a free key at [aviationstack.com](https://aviationstack.com/).
+Get a free key by subscribing to [AeroDataBox on RapidAPI](https://rapidapi.com/aedbx-aedbx/api/aerodatabox).
 
-> Snow conditions work without any API key. The flight search requires an Aviation Stack key.
+> Snow conditions work without any API key. The flight search requires an AeroDataBox key.
 
 ### Run
 
@@ -93,7 +94,7 @@ Or manually add to your Claude Desktop config (`~/Library/Application Support/Cl
       "command": "uv",
       "args": ["run", "--directory", "/path/to/Powder-Hound", "src/main.py"],
       "env": {
-        "AVIATIONSTACK_API_KEY": "your_key_here"
+        "AERODATABOX_API_KEY": "your_rapidapi_key_here"
       }
     }
   }
