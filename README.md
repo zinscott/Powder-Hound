@@ -42,7 +42,7 @@ Plus resorts in Germany, Sweden, Spain, New Zealand, Argentina, and many more co
 |-----|---------|-------------------|
 | [Open-Meteo](https://open-meteo.com/) | Snow and weather data | No |
 | [OpenStreetMap Overpass](https://overpass-api.de/) | Ski resort database | No |
-| [AeroDataBox](https://aerodatabox.com/) (via RapidAPI) | Flight schedules and routes | Yes (free tier, 150 req/month) |
+| [AeroDataBox](https://aerodatabox.com/) (via RapidAPI) | Flight schedules and routes | Yes (free tier, 600 units/month) |
 
 ## Setup
 
