@@ -93,7 +93,7 @@ Or manually add to your Claude Desktop config (`~/Library/Application Support/Cl
 {
   "mcpServers": {
     "powder-hound": {
-      "command": "uv",
+      "command": "your_uv_path_here",
       "args": ["run", "--directory", "/path/to/Powder-Hound", "src/main.py"],
       "env": {
         "AERODATABOX_API_KEY": "your_rapidapi_key_here"
