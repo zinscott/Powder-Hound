@@ -15,6 +15,7 @@ class Resort(BaseModel):
     latitude: float
     longitude: float
     elevation_m: int
+    area_km2: float  # bounding box area of the resort
     nearest_airport: str  # IATA code (e.g. "DEN")
     airport_name: str
 
@@ -43,7 +44,7 @@ class SnowConditions(BaseModel):
     daily_details: list[DayForecast]
 
 
-# A single flight from Aviation Stack (no pricing — schedules only)
+# A single flight from AeroDataBox (no pricing — schedules only)
 class FlightResult(BaseModel):
     airline: str
     flight_number: str
