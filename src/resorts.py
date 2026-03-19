@@ -12,7 +12,7 @@ import math
 import os
 import time
 import httpx
-import reverse_geocoder as rg
+import geopip
 from models import Resort
 
 # Cache the built resort database to avoid hitting Overpass on every startup
@@ -172,19 +172,19 @@ def build_resort_database() -> list[Resort]:
     raw_resorts = fetch_resorts_from_overpass()
     airports = load_airports()
 
-    # Batch reverse geocode all resort coordinates to get country codes
-    coords = [(raw["latitude"], raw["longitude"]) for raw in raw_resorts]
-    geo_results = rg.search(coords)
-
     resorts = []
-    for raw, geo in zip(raw_resorts, geo_results):
+    for raw in raw_resorts:
         nearest = find_nearest_airport(raw["latitude"], raw["longitude"], airports)
         if nearest is None:
             continue
 
+        # Get country code from actual country boundaries
+        geo = geopip.search(lng=raw["longitude"], lat=raw["latitude"])
+        region = geo.get("ISO2", "XX") if geo else "XX"
+
         resorts.append(Resort(
             name=raw["name"],
-            region=geo["cc"],
+            region=region,
             latitude=raw["latitude"],
             longitude=raw["longitude"],
             elevation_m=0,
