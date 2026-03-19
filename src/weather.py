@@ -120,7 +120,7 @@ async def fetch_all_conditions(resorts: list[Resort], days_back: int = 3, foreca
             # Retry up to 3 times on rate limit (429) with increasing backoff
             for attempt in range(3):
                 try:
-                    params = _build_params(resort, days_back, forecast_days)
+                    params = build_params(resort, days_back, forecast_days)
                     resp = await client.get(OPEN_METEO_URL, params=params, timeout=30.0)
                     resp.raise_for_status()
                     return parse_conditions(resort, resp.json(), days_back)
