@@ -9,5 +9,5 @@ dependencies = [
     "httpx>=0.28",
     "pydantic>=2.0",
     "python-dotenv>=1.0",
-    "reverse-geocoder>=1.5.1",
+    "geopip>=2.1.0",
 ]
