@@ -22,13 +22,16 @@ CACHE_MAX_AGE_SECONDS = 604800  # refresh weekly
 
 OVERPASS_URL = "https://overpass-api.de/api/interpreter"
 
-# Query OSM for named ski resort areas, return center points
+# Query OSM for named, non-abandoned ski resort areas with bounding boxes
 OVERPASS_QUERY = (
     "[out:json][timeout:30];"
-    '( way["landuse"="winter_sports"]["name"];'
-    '  relation["landuse"="winter_sports"]["name"]; );'
-    "out center;"
+    '( way["landuse"="winter_sports"]["name"]["abandoned"!="yes"];'
+    '  relation["landuse"="winter_sports"]["name"]["abandoned"!="yes"]; );'
+    "out center bb;"
 )
+
+# Minimum bounding box area to filter out tubing hills, sledding areas, etc.
+MIN_AREA_KM2 = 0.5
 
 RESORTS: list[Resort] = []
 
@@ -105,6 +108,14 @@ def find_nearest_airport(lat: float, lon: float, airports: list[dict]) -> dict |
     return best
 
 
+def bbox_area_km2(bounds: dict) -> float:
+    # Calculate rough area of a bounding box in km²
+    lat_mid = math.radians((bounds["minlat"] + bounds["maxlat"]) / 2)
+    width_km = (bounds["maxlon"] - bounds["minlon"]) * 111.32 * math.cos(lat_mid)
+    height_km = (bounds["maxlat"] - bounds["minlat"]) * 111.32
+    return abs(width_km * height_km)
+
+
 def fetch_resorts_from_overpass() -> list[dict]:
     # Query OpenStreetMap for ski resorts via the Overpass API
     resp = httpx.post(OVERPASS_URL, data={"data": OVERPASS_QUERY}, timeout=60.0)
@@ -119,12 +130,16 @@ def fetch_resorts_from_overpass() -> list[dict]:
         if not name:
             continue
 
-        # 'out center' gives us center coords for ways/relations
-        center = element.get("center", {})
-        lat = center.get("lat")
-        lon = center.get("lon")
-        if lat is None or lon is None:
+        # Skip small areas (tubing hills, sledding parks, etc.)
+        bounds = element.get("bounds")
+        if not bounds:
             continue
+        if bbox_area_km2(bounds) < MIN_AREA_KM2:
+            continue
+
+        # Calculate center from bounding box
+        lat = (bounds["minlat"] + bounds["maxlat"]) / 2
+        lon = (bounds["minlon"] + bounds["maxlon"]) / 2
 
         resorts.append({"name": name, "latitude": lat, "longitude": lon})
     return resorts
