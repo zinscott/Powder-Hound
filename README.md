@@ -19,7 +19,7 @@ Ask natural language questions like **"Where is the best snow right now?"** and 
 | `find_best_snow` | Ranks 2,200+ resorts worldwide by recent snowfall. Filter by region and resort size. |
 | `get_resort_conditions` | Detailed day-by-day snow, wind, and weather forecast for a specific resort. |
 | `search_flights` | Search for upcoming flights from your airport to a resort's nearest airport. |
-| `flight_info` | Get full details (arrival time, departure time, status) for a specific flight. |
+| `flight_info` | Get full details (departure time, arrival time, status) for a specific flight. |
 
 ## Resort Coverage
 
