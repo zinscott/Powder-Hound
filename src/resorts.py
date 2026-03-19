@@ -24,7 +24,7 @@ OVERPASS_URL = "https://overpass-api.de/api/interpreter"
 
 # Query OSM for named, non-abandoned ski resort areas with bounding boxes
 OVERPASS_QUERY = (
-    "[out:json][timeout:30];"
+    "[out:json][timeout:60];"
     '( way["landuse"="winter_sports"]["name"]["abandoned"!="yes"];'
     '  relation["landuse"="winter_sports"]["name"]["abandoned"!="yes"]; );'
     "out center bb;"
@@ -134,14 +134,14 @@ def fetch_resorts_from_overpass() -> list[dict]:
         bounds = element.get("bounds")
         if not bounds:
             continue
-        if bbox_area_km2(bounds) < MIN_AREA_KM2:
+        area = round(bbox_area_km2(bounds), 2)
+        if area < MIN_AREA_KM2:
             continue
 
         # Calculate center from bounding box
         lat = (bounds["minlat"] + bounds["maxlat"]) / 2
         lon = (bounds["minlon"] + bounds["maxlon"]) / 2
-
-        resorts.append({"name": name, "latitude": lat, "longitude": lon})
+        resorts.append({"name": name, "latitude": lat, "longitude": lon, "area_km2": area})
     return resorts
 
 
@@ -188,6 +188,7 @@ def build_resort_database() -> list[Resort]:
             latitude=raw["latitude"],
             longitude=raw["longitude"],
             elevation_m=0,
+            area_km2=raw["area_km2"],
             nearest_airport=nearest["iata"],
             airport_name=nearest["name"],
         ))
