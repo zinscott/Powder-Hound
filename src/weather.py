@@ -6,9 +6,7 @@ Open-Meteo is free with no API key required.
 """
 
 from datetime import date
-
 import asyncio
-
 import httpx
 from models import DayForecast, SnowConditions, Resort
 
