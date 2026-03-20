@@ -29,8 +29,8 @@ def get_resort_conditions(resort_name: str) -> dict:
 
 
 @mcp.tool()
-async def find_best_snow(region: str | None = None, top_n: int = 10, min_area_km2: float = 10.0) -> list[dict]:
-    """Rank resorts by recent snowfall. Use region to filter by country code (e.g. 'US', 'JP', 'FR'). Set min_area_km2 to 0 to include smaller resorts, or keep the default (10) for major resorts only."""
+async def find_best_snow(region: str | None = None, top_n: int = 10, min_area_km2: float = 10.0, sort_by: str = "recent") -> list[dict]:
+    """Rank resorts by snowfall. sort_by: 'recent' for last 3 days of snowfall (default), 'forecast' for upcoming 7-day snowfall, or 'total' for both combined. Use region to filter by country code (e.g. 'US', 'JP', 'FR'). min_area_km2 filters by resort size — default 10 returns only major resorts, set to 0 to include small local hills."""
     if region:
         resorts = get_resorts_by_region(region)
         if not resorts:
@@ -45,8 +45,13 @@ async def find_best_snow(region: str | None = None, top_n: int = 10, min_area_km
     # Fetch conditions for all resorts concurrently
     conditions = await fetch_all_conditions(resorts)
 
-    # Sort by recent snowfall (most snow first)
-    conditions.sort(key=lambda c: c.recent_snowfall_cm, reverse=True)
+    # Sort by selected snowfall metric (most snow first)
+    if sort_by == "forecast":
+        conditions.sort(key=lambda c: c.forecast_snowfall_cm, reverse=True)
+    elif sort_by == "total":
+        conditions.sort(key=lambda c: c.recent_snowfall_cm + c.forecast_snowfall_cm, reverse=True)
+    else:
+        conditions.sort(key=lambda c: c.recent_snowfall_cm, reverse=True)
 
     # Return top N as dicts
     return [c.model_dump() for c in conditions[:top_n]]
@@ -54,7 +59,7 @@ async def find_best_snow(region: str | None = None, top_n: int = 10, min_area_km
 
 @mcp.tool()
 def search_flights(departure_airport: str, arrival_airport: str, flight_date: str | None = None) -> list[dict]:
-    """Search for flights between two airports. Ask the user for a specific travel date before calling — each search uses 2 API calls from a limited monthly quota. flight_date format: YYYY-MM-DD."""
+    """Search for flights between two airports. Each resort has a nearest_airport field you can use as the arrival airport. Ask the user for a specific travel date before calling — each search uses 2 API calls from a limited monthly quota. flight_date format: YYYY-MM-DD."""
     flights = flight_search(departure_airport, arrival_airport, flight_date)
     return [f.model_dump() for f in flights]
 
