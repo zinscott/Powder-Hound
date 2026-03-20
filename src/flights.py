@@ -17,6 +17,10 @@ load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
 
 AERODATABOX_URL = "https://aerodatabox.p.rapidapi.com"
 
+# Cache departures by (airport, date) to avoid duplicate API calls
+# e.g. SFO→DEN then SFO→SLC reuses the same SFO departure data
+departure_cache: dict[tuple[str, str], list[dict]] = {}
+
 
 def get_api_key() -> str:
     # Read API key at call time so env vars set after import are picked up
@@ -61,24 +65,33 @@ def search_flights(dep_iata: str, arr_iata: str, flight_date: str | None = None)
     else:
         day = datetime.now() + timedelta(days=1)
 
-    # AeroDataBox max window is 12 hours, so split into two calls for full day
-    ranges = [
-        (day.strftime("%Y-%m-%dT00:00"), day.strftime("%Y-%m-%dT12:00")),
-        (day.strftime("%Y-%m-%dT12:00"), day.strftime("%Y-%m-%dT23:59")),
-    ]
+    date_str = day.strftime("%Y-%m-%d")
+    cache_key = (dep_iata, date_str)
 
-    all_departures = []
-    for i, (from_local, to_local) in enumerate(ranges):
-        if i > 0:
-            time.sleep(2)  # Rate limit: pause between consecutive requests
-        url = f"{AERODATABOX_URL}/flights/airports/iata/{dep_iata}/{from_local}/{to_local}"
-        # Retry once on 429
-        resp = httpx.get(url, headers=get_headers(), timeout=30.0)
-        if resp.status_code == 429:
-            time.sleep(3)
+    # Return cached departures if available
+    if cache_key in departure_cache:
+        all_departures = departure_cache[cache_key]
+    else:
+        # AeroDataBox max window is 12 hours, so split into two calls for full day
+        ranges = [
+            (day.strftime("%Y-%m-%dT00:00"), day.strftime("%Y-%m-%dT12:00")),
+            (day.strftime("%Y-%m-%dT12:00"), day.strftime("%Y-%m-%dT23:59")),
+        ]
+
+        all_departures = []
+        for i, (from_local, to_local) in enumerate(ranges):
+            if i > 0:
+                time.sleep(2)  # Rate limit: pause between consecutive requests
+            url = f"{AERODATABOX_URL}/flights/airports/iata/{dep_iata}/{from_local}/{to_local}"
+            # Retry once on 429
             resp = httpx.get(url, headers=get_headers(), timeout=30.0)
-        resp.raise_for_status()
-        all_departures.extend(resp.json().get("departures", []))
+            if resp.status_code == 429:
+                time.sleep(3)
+                resp = httpx.get(url, headers=get_headers(), timeout=30.0)
+            resp.raise_for_status()
+            all_departures.extend(resp.json().get("departures", []))
+
+        departure_cache[cache_key] = all_departures
 
     if not all_departures:
         return []
@@ -103,7 +116,11 @@ def get_flight_details(flight_number: str, flight_date: str | None = None) -> Fl
     flight_number = flight_number.replace(" ", "")
 
     url = f"{AERODATABOX_URL}/flights/number/{flight_number}/{flight_date}"
+    # Retry once on 429
     resp = httpx.get(url, headers=get_headers(), timeout=30.0)
+    if resp.status_code == 429:
+        time.sleep(3)
+        resp = httpx.get(url, headers=get_headers(), timeout=30.0)
     resp.raise_for_status()
 
     data = resp.json()
