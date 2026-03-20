@@ -16,7 +16,7 @@ Ask natural language questions like **"Where is the best snow right now?"** and 
 
 | Tool | Description |
 |------|-------------|
-| `find_best_snow` | Ranks 2,200+ resorts worldwide by recent snowfall. Filter by region and resort size. |
+| `find_best_snow` | Ranks 2,200+ resorts worldwide by recent snowfall, forecast snowfall, or both combined. Filter by region and resort size. |
 | `get_resort_conditions` | Detailed day-by-day snow, wind, and weather forecast for a specific resort. |
 | `search_flights` | Search for upcoming flights from your airport to a resort's nearest airport. |
 | `flight_info` | Get full details (departure time, arrival time, status) for a specific flight. |
@@ -71,7 +71,7 @@ Get a free key by subscribing to [AeroDataBox on RapidAPI](https://rapidapi.com/
 
 > Snow conditions work without any API key. The flight search requires an AeroDataBox key.
 
-> **Free tier limitations:** 600 API units/month (not requests — endpoints cost 1-60 units each). Rate limited to 1 request/second. Future flight schedules available up to 365 days out but may show fewer results than day-of. Each flight search uses 2 calls (two 12-hour windows). No overages — once your monthly units are used, requests will fail until the next billing cycle.
+> **Free tier limitations:** 600 API units/month (not requests — endpoints cost 1-60 units each). Rate limited to 1 request/second. Future flight schedules available up to 365 days out but may show fewer results than day-of. Each flight search uses 2 calls (two 12-hour windows). No overages — once your monthly units are used, requests will fail until the next billing cycle. Only direct flights are returned — connecting itineraries are not currently supported.
 
 ### Run
 
