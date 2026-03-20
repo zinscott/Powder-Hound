@@ -29,8 +29,8 @@ def get_resort_conditions(resort_name: str) -> dict:
 
 
 @mcp.tool()
-async def find_best_snow(region: str | None = None, top_n: int = 10, min_area_km2: float = 10.0, sort_by: str = "recent") -> list[dict]:
-    """Rank resorts by snowfall. sort_by: 'recent' for last 3 days of snowfall (default), 'forecast' for upcoming 7-day snowfall, or 'total' for both combined. Use region to filter by country code (e.g. 'US', 'JP', 'FR'). min_area_km2 filters by resort size — default 10 returns only major resorts, set to 0 to include small local hills."""
+async def find_best_snow(region: str | None = None, top_n: int = 10, min_area_km2: float = 10.0, sort_by: str = "recent", days_back: int = 3) -> list[dict]:
+    """Rank resorts by snowfall. sort_by: 'recent' for snowfall over the lookback period (default), 'forecast' for upcoming 7-day snowfall, or 'total' for both combined. days_back: number of past days to include in recent snowfall (default 3, use 7 for 'this week'). Use region to filter by country code (e.g. 'US', 'JP', 'FR'). min_area_km2 filters by resort size — default 10 returns only major resorts, set to 0 to include small local hills."""
     if region:
         resorts = get_resorts_by_region(region)
         if not resorts:
@@ -43,7 +43,7 @@ async def find_best_snow(region: str | None = None, top_n: int = 10, min_area_km
         resorts = [r for r in resorts if r.area_km2 >= min_area_km2]
 
     # Fetch conditions for all resorts concurrently
-    conditions = await fetch_all_conditions(resorts)
+    conditions = await fetch_all_conditions(resorts, days_back=days_back)
 
     # Sort by selected snowfall metric (most snow first)
     if sort_by == "forecast":
