@@ -80,9 +80,11 @@ def parse_conditions(resort: Resort, data: dict, days_back: int) -> SnowConditio
     recent_snowfall = sum(snowfall[i] or 0.0 for i in range(days_back))
     forecast_snowfall = sum(snowfall[i] or 0.0 for i in range(days_back, len(snowfall)))
 
-    # Current snow depth — most recent non-None hourly reading
+    # Current snow depth — most recent non-None hourly reading up to today only
+    today_index = next((i for i, d in enumerate(dates) if d >= today_str), len(dates))
+    hours_through_today = hourly_depth[:(today_index + 1) * 24]
     latest_depth = None
-    for d in reversed(hourly_depth):
+    for d in reversed(hours_through_today):
         if d is not None:
             latest_depth = d
             break
