@@ -19,7 +19,7 @@ load_resorts()
 
 @mcp.tool()
 def get_resort_conditions(resort_name: str) -> dict:
-    """Get detailed snow and weather conditions for a specific ski resort. Returns 3 days of recent snowfall and a 7-day forecast including snow depth, temperatures, and wind speed."""
+    """Get detailed snow and weather conditions for a specific ski resort. Returns 3 days of recent snowfall and a 7-day forecast including temperatures and wind speed."""
     resort = get_resort(resort_name)
     if not resort:
         return {"error": f"Resort '{resort_name}' not found"}
