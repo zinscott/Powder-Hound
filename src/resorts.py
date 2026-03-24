@@ -167,13 +167,31 @@ def load_cache() -> list[Resort]:
     return [Resort(**entry) for entry in data]
 
 
+def fetch_elevations(resorts: list[dict]) -> list[float]:
+    # Batch-fetch ground elevations from Open-Meteo (up to 100 per request)
+    elevations = []
+    batch_size = 100
+    for i in range(0, len(resorts), batch_size):
+        batch = resorts[i:i + batch_size]
+        lats = ",".join(str(r["latitude"]) for r in batch)
+        lons = ",".join(str(r["longitude"]) for r in batch)
+        resp = httpx.get(
+            f"https://api.open-meteo.com/v1/elevation?latitude={lats}&longitude={lons}",
+            timeout=30.0,
+        )
+        resp.raise_for_status()
+        elevations.extend(resp.json()["elevation"])
+    return elevations
+
+
 def build_resort_database() -> list[Resort]:
     # Fetch resorts from Overpass, match each to its nearest airport
     raw_resorts = fetch_resorts_from_overpass()
     airports = load_airports()
+    elevations = fetch_elevations(raw_resorts)
 
     resorts = []
-    for raw in raw_resorts:
+    for raw, elev in zip(raw_resorts, elevations):
         nearest = find_nearest_airport(raw["latitude"], raw["longitude"], airports)
         if nearest is None:
             continue
@@ -187,7 +205,7 @@ def build_resort_database() -> list[Resort]:
             region=region,
             latitude=raw["latitude"],
             longitude=raw["longitude"],
-            elevation_m=0,
+            elevation_m=int(elev),
             area_km2=raw["area_km2"],
             nearest_airport=nearest["iata"],
             airport_name=nearest["name"],
