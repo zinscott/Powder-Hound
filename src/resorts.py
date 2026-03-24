@@ -168,19 +168,19 @@ def load_cache() -> list[Resort]:
 
 
 def fetch_elevations(resorts: list[dict]) -> list[float]:
-    # Batch-fetch ground elevations from Open-Meteo (up to 100 per request)
+    # Batch-fetch ground elevations from Open Elevation API (SRTM data, no rate limit)
     elevations = []
-    batch_size = 100
+    batch_size = 200
     for i in range(0, len(resorts), batch_size):
         batch = resorts[i:i + batch_size]
-        lats = ",".join(str(r["latitude"]) for r in batch)
-        lons = ",".join(str(r["longitude"]) for r in batch)
-        resp = httpx.get(
-            f"https://api.open-meteo.com/v1/elevation?latitude={lats}&longitude={lons}",
-            timeout=30.0,
+        locations = [{"latitude": r["latitude"], "longitude": r["longitude"]} for r in batch]
+        resp = httpx.post(
+            "https://api.open-elevation.com/api/v1/lookup",
+            json={"locations": locations},
+            timeout=60.0,
         )
         resp.raise_for_status()
-        elevations.extend(resp.json()["elevation"])
+        elevations.extend(r["elevation"] for r in resp.json()["results"])
     return elevations
 
 
