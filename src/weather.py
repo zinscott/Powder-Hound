@@ -1,19 +1,54 @@
 """
 Open-Meteo weather client for ski resort snow conditions.
 
-Fetches historical snowfall + forecast data for resort coordinates.
+Fetches historical snowfall + forecast data using regional weather models
+matched to each resort's location for better mountain accuracy.
 Open-Meteo is free with no API key required.
 """
 
-from datetime import date
 import asyncio
 import httpx
 from models import DayForecast, SnowConditions, Resort
 
-OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast"
+# Regional model endpoints — higher resolution than the default global model
+REGION_MODELS = {
+    "CA": "https://api.open-meteo.com/v1/gem",          # Canadian GEM 2.5km
+    "US": "https://api.open-meteo.com/v1/gfs",          # GFS/HRRR 3km
+    "JP": "https://api.open-meteo.com/v1/jma",          # JMA MSM 5km
+    "FR": "https://api.open-meteo.com/v1/meteofrance",  # AROME 1.3km
+    "DE": "https://api.open-meteo.com/v1/dwd-icon",     # ICON-D2 2km
+    "AT": "https://api.open-meteo.com/v1/dwd-icon",     # ICON-D2 2km
+    "CH": "https://api.open-meteo.com/v1/dwd-icon",     # ICON-D2 2km
+    "IT": "https://api.open-meteo.com/v1/dwd-icon",     # ICON-D2 2km
+}
+DEFAULT_MODEL_URL = "https://api.open-meteo.com/v1/forecast"
+
+# Average mid-station offset by region — Alps have much more vertical than Japan/NA
+ALPINE_OFFSETS = {
+    "FR": 1400,  # French Alps (Chamonix, Val d'Isère)
+    "CH": 1300,  # Swiss Alps (Zermatt, Verbier)
+    "AT": 1000,  # Austrian Alps (St. Anton, Kitzbühel)
+    "IT": 1000,  # Italian Alps (Cortina, Livigno)
+    "DE": 800,   # German Alps
+    "US": 600,   # North America
+    "CA": 700,   # Canada (Whistler, Revelstoke)
+    "JP": 500,   # Japan (Niseko, Hakuba)
+}
+DEFAULT_ALPINE_OFFSET_M = 600
 
 # Limit concurrent requests to be polite to the free API
 MAX_CONCURRENT = 10
+
+
+def get_model_url(region: str) -> str:
+    # Pick the best regional weather model for a resort's country
+    return REGION_MODELS.get(region, DEFAULT_MODEL_URL)
+
+
+def get_alpine_elevation(resort: Resort) -> int:
+    # Estimate mid-station elevation using region-specific offset
+    offset = ALPINE_OFFSETS.get(resort.region, DEFAULT_ALPINE_OFFSET_M)
+    return resort.elevation_m + offset
 
 
 def build_params(resort: Resort, days_back: int, forecast_days: int) -> list[tuple]:
@@ -21,11 +56,11 @@ def build_params(resort: Resort, days_back: int, forecast_days: int) -> list[tup
     return [
         ("latitude", resort.latitude),
         ("longitude", resort.longitude),
+        ("elevation", get_alpine_elevation(resort)),
         ("daily", "snowfall_sum"),
         ("daily", "temperature_2m_max"),
         ("daily", "temperature_2m_min"),
         ("daily", "wind_speed_10m_max"),
-        ("hourly", "snow_depth"),
         ("past_days", days_back),
         ("forecast_days", forecast_days),
         ("timezone", "auto"),
@@ -41,36 +76,12 @@ def parse_conditions(resort: Resort, data: dict, days_back: int) -> SnowConditio
     temp_min = daily["temperature_2m_min"]
     wind_max = daily["wind_speed_10m_max"]
 
-    hourly_depth = data["hourly"]["snow_depth"]
-    today_str = date.today().isoformat()
-
-    # Snow depth per day: end-of-day for past, current hour for today, daily avg for future
-    daily_snow_depth = []
-    for i, d in enumerate(dates):
-        day_hours = hourly_depth[i * 24:(i + 1) * 24]
-        valid_hours = [h for h in day_hours if h is not None]
-
-        if d < today_str:
-            # Past day — end of day (hour 23)
-            daily_snow_depth.append(day_hours[23] if day_hours[23] is not None else (valid_hours[-1] if valid_hours else None))
-        elif d == today_str:
-            # Today — most recent non-None reading
-            depth = None
-            for h in reversed(valid_hours):
-                depth = h
-                break
-            daily_snow_depth.append(depth)
-        else:
-            # Future day — daily average, rounded
-            daily_snow_depth.append(round(sum(valid_hours) / len(valid_hours), 2) if valid_hours else None)
-
     # Build day-by-day details
     daily_details = []
     for i, d in enumerate(dates):
         daily_details.append(DayForecast(
             date=d,
             snowfall_cm=snowfall[i] or 0.0,
-            snow_depth_m=daily_snow_depth[i],
             temp_high_c=temp_max[i],
             temp_low_c=temp_min[i],
             wind_speed_max_kmh=wind_max[i] or 0.0,
@@ -80,22 +91,12 @@ def parse_conditions(resort: Resort, data: dict, days_back: int) -> SnowConditio
     recent_snowfall = sum(snowfall[i] or 0.0 for i in range(days_back))
     forecast_snowfall = sum(snowfall[i] or 0.0 for i in range(days_back, len(snowfall)))
 
-    # Current snow depth — most recent non-None hourly reading up to today only
-    today_index = next((i for i, d in enumerate(dates) if d >= today_str), len(dates))
-    hours_through_today = hourly_depth[:(today_index + 1) * 24]
-    latest_depth = None
-    for d in reversed(hours_through_today):
-        if d is not None:
-            latest_depth = d
-            break
-
     return SnowConditions(
         resort_name=resort.name,
         region=resort.region,
         latitude=resort.latitude,
         longitude=resort.longitude,
         recent_snowfall_cm=recent_snowfall,
-        snow_depth_m=latest_depth,
         forecast_snowfall_cm=forecast_snowfall,
         temp_high_c=max(t for t in temp_max if t is not None),
         temp_low_c=min(t for t in temp_min if t is not None),
@@ -105,10 +106,22 @@ def parse_conditions(resort: Resort, data: dict, days_back: int) -> SnowConditio
 
 def fetch_resort_conditions(resort: Resort, days_back: int = 3, forecast_days: int = 7) -> SnowConditions:
     # Fetch snow and weather conditions for a single resort (sync)
+    # Try regional model first, fall back to default if it returns incomplete data
+    url = get_model_url(resort.region)
     params = build_params(resort, days_back, forecast_days)
-    resp = httpx.get(OPEN_METEO_URL, params=params, timeout=30.0)
+    resp = httpx.get(url, params=params, timeout=30.0)
     resp.raise_for_status()
-    return parse_conditions(resort, resp.json(), days_back)
+    data = resp.json()
+
+    # If regional model has None temps, pull temps from default model but keep regional snow
+    if any(t is None for t in data["daily"]["temperature_2m_max"]):
+        fallback = httpx.get(DEFAULT_MODEL_URL, params=params, timeout=30.0)
+        fallback.raise_for_status()
+        fb = fallback.json()
+        data["daily"]["temperature_2m_max"] = fb["daily"]["temperature_2m_max"]
+        data["daily"]["temperature_2m_min"] = fb["daily"]["temperature_2m_min"]
+
+    return parse_conditions(resort, data, days_back)
 
 
 async def fetch_all_conditions(resorts: list[Resort], days_back: int = 3, forecast_days: int = 7) -> list[SnowConditions]:
@@ -116,14 +129,25 @@ async def fetch_all_conditions(resorts: list[Resort], days_back: int = 3, foreca
     semaphore = asyncio.Semaphore(MAX_CONCURRENT)
 
     async def fetch_one(resort: Resort, client: httpx.AsyncClient) -> SnowConditions | None:
+        url = get_model_url(resort.region)
         async with semaphore:
             # Retry up to 3 times on rate limit (429) with increasing backoff
             for attempt in range(3):
                 try:
                     params = build_params(resort, days_back, forecast_days)
-                    resp = await client.get(OPEN_METEO_URL, params=params, timeout=30.0)
+                    resp = await client.get(url, params=params, timeout=30.0)
                     resp.raise_for_status()
-                    return parse_conditions(resort, resp.json(), days_back)
+                    data = resp.json()
+
+                    # If regional model has None temps, pull temps from default but keep regional snow
+                    if any(t is None for t in data["daily"]["temperature_2m_max"]):
+                        fallback = await client.get(DEFAULT_MODEL_URL, params=params, timeout=30.0)
+                        fallback.raise_for_status()
+                        fb = fallback.json()
+                        data["daily"]["temperature_2m_max"] = fb["daily"]["temperature_2m_max"]
+                        data["daily"]["temperature_2m_min"] = fb["daily"]["temperature_2m_min"]
+
+                    return parse_conditions(resort, data, days_back)
                 except httpx.HTTPStatusError as e:
                     if e.response.status_code == 429 and attempt < 2:
                         await asyncio.sleep(1 * (attempt + 1))
