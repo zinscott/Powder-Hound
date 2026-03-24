@@ -2,7 +2,7 @@
 Pydantic data models for Powder Hound.
 
 Defines the core data structures used across the application for
-resorts, weather conditions, flights, and recommendations.
+resorts, weather conditions, and flights.
 """
 
 from pydantic import BaseModel
@@ -51,13 +51,3 @@ class FlightResult(BaseModel):
     departure_time: str
     arrival_time: str
     status: str
-
-
-# Combined snow conditions + optional flights for a resort recommendation
-class ResortRecommendation(BaseModel):
-    resort: str
-    region: str
-    recent_snowfall_cm: float
-    forecast_snowfall_cm: float
-    conditions_summary: str  # human-readable summary
-    flights: list[FlightResult] | None
