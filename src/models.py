@@ -24,7 +24,6 @@ class Resort(BaseModel):
 class DayForecast(BaseModel):
     date: str
     snowfall_cm: float
-    snow_depth_m: float | None
     temp_high_c: float
     temp_low_c: float
     wind_speed_max_kmh: float
@@ -37,7 +36,6 @@ class SnowConditions(BaseModel):
     latitude: float
     longitude: float
     recent_snowfall_cm: float  # total over lookback period
-    snow_depth_m: float | None
     forecast_snowfall_cm: float  # total over next 7 days
     temp_high_c: float
     temp_low_c: float
@@ -60,7 +58,6 @@ class ResortRecommendation(BaseModel):
     resort: str
     region: str
     recent_snowfall_cm: float
-    snow_depth_m: float | None
     forecast_snowfall_cm: float
     conditions_summary: str  # human-readable summary
     flights: list[FlightResult] | None
